@@ -129,7 +129,15 @@ nav{display:flex;align-items:center;justify-content:space-between;gap:10px;paddi
 .bulk-result{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;margin-bottom:5px;font-size:13px;}
 .bulk-result.ok{background:rgba(111,214,160,0.09);border:1px solid rgba(111,214,160,0.22);}
 .bulk-result.err{background:rgba(255,123,138,0.08);border:1px solid rgba(255,123,138,0.2);color:var(--muted);}
-@media(max-width:480px){.box-grid,.stat-grid{grid-template-columns:1fr 1fr;}.rating-grid{grid-template-columns:1fr 1fr;}.brand-es{font-size:28px;}.nav-btn{padding:6px 8px;font-size:11px;}}
+@media(max-width:480px){.box-grid,.stat-grid{grid-template-columns:1fr 1fr;}.reserve-panel{grid-column:1 / -1;grid-row:auto;}.rating-grid{grid-template-columns:1fr 1fr;}.brand-es{font-size:28px;}.nav-btn{padding:6px 8px;font-size:11px;}}
+.reserve-panel{grid-column:3;grid-row:1 / span 5;display:flex;flex-direction:column;gap:10px;}
+.reserve-ctl{border:1.5px solid rgba(216,195,165,0.28);border-radius:16px;padding:14px 13px;background:rgba(216,195,165,0.05);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);position:relative;}
+.reserve-ctl .inp{padding:8px 10px;font-size:14px;}
+.reserve-row{display:flex;gap:8px;align-items:center;}
+.reserve-star{background:none;border:none;cursor:pointer;font-size:19px;line-height:1;padding:3px 6px;color:rgba(255,255,255,0.28);transition:color .15s;}
+.reserve-star.on{color:var(--sun);}
+.vessel{display:block;margin:0 auto 8px;filter:drop-shadow(0 4px 10px rgba(255,138,120,.25));}
+.vessel.full{filter:drop-shadow(0 0 12px rgba(246,200,95,.55));}
 .card-back-word{font-family:var(--serif);font-size:38px;font-weight:700;color:var(--brandL);text-align:center;margin-bottom:6px;}
 .card-back-english{font-family:var(--serif);font-size:24px;font-weight:500;color:var(--sand);text-align:center;margin-bottom:10px;}
 .card-back-example{font-family:var(--serif);font-size:18px;color:var(--sunL);text-align:center;line-height:1.6;margin-bottom:6px;font-style:italic;}
@@ -225,6 +233,7 @@ const BOXES=[
   {id:"l5a",label:"L5A",color:"#B79CF0",isQueue:false,main:5},
   {id:"l5b",label:"L5B",color:"#B79CF0",isQueue:false,main:5},
   {id:"mastered",label:"Mastered",color:"#6FD6A0",isQueue:false,main:6},
+  {id:"reserve",label:"Reserves",color:"#D8C3A5",isQueue:false,main:7},
 ];
 const DAY_LEVELS={
   0:["l5b","l4","l3","l2b","l1"],1:["l2b","l1"],2:["l2b","l1"],
@@ -247,7 +256,7 @@ function ss(k,v){
 }
 function getWords(){return ls("pal-words",[]);}
 function saveWords(w){ss("pal-words",w);}
-function getBoxes(){return ls("pal-boxes",{l1:[],l1q:[],l2a:[],l2b:[],l3q:[],l3:[],l4q:[],l4:[],l5a:[],l5b:[],mastered:[]});}
+function getBoxes(){return ls("pal-boxes",{l1:[],l1q:[],l2a:[],l2b:[],l3q:[],l3:[],l4q:[],l4:[],l5a:[],l5b:[],mastered:[],reserve:[]});}
 function saveBoxes(b){ss("pal-boxes",b);}
 function getSettings(){return ls("pal-settings",{l1Target:40});}
 function saveSettings(s){ss("pal-settings",s);}
@@ -432,16 +441,111 @@ function renderBoxGrid(){
   const boxes=getBoxes();const words=getWords();
   const dm={};words.forEach(w=>{dm[w.id]=w.dialect;});
   function cnt(id){const ids=boxes[id]||[];return _variantFilter==="All"?ids.length:ids.filter(id=>dm[id]===_variantFilter).length;}
-  const layout=[{id:"l1q",q:true},{id:"l1",q:false},null,{id:"l2a",q:false},{id:"l2b",q:false},null,{id:"l3q",q:true},{id:"l3",q:false},null,{id:"l4q",q:true},{id:"l4",q:false},null,{id:"l5a",q:false},{id:"l5b",q:false},null,{id:"mastered",q:false},null,null];
+  const layout=[{id:"l1q",q:true},{id:"l1",q:false},{id:"l2a",q:false},{id:"l2b",q:false},{id:"l3q",q:true},{id:"l3",q:false},{id:"l4q",q:true},{id:"l4",q:false},{id:"l5a",q:false},{id:"l5b",q:false}];
   let h=`<div class="box-grid">`;
   for(const item of layout){
-    if(!item){h+=`<div></div>`;continue;}
     const def=boxDef(item.id);const c=def.color;const rg=hexRgb(c);const n=cnt(item.id);
     h+=item.q
       ?`<div class="box-card queue-box" style="border-color:rgba(${rg},0.4)"><div class="queue-label" style="color:${c}">${def.label}</div><div class="queue-count" style="color:${c}">${n}</div></div>`
-      :`<div class="box-card" onclick="viewBox('${item.id}')" style="background:rgba(${rg},0.04);border-color:rgba(${rg},0.25)"><div class="box-label" style="color:${c}">${def.label}</div><div class="box-count" style="color:${c}">${n}</div></div>`;
+      :`<div class="box-card" onclick="viewBox('${item.id}')" style="background:rgba(${rg},0.05);border-color:rgba(${rg},0.28)"><div class="box-label" style="color:${c}">${def.label}</div><div class="box-count" style="color:${c}">${n}</div></div>`;
   }
-  return h+`</div>`;
+  // Mastered lives in the right-hand column, under the Reserves controls
+  const mdef=boxDef("mastered");const mc=mdef.color;const mrg=hexRgb(mc);
+  const masteredTile=`<div class="box-card" onclick="viewBox('mastered')" style="background:rgba(${mrg},0.05);border-color:rgba(${mrg},0.28)"><div class="box-label" style="color:${mc}">Mastered</div><div class="box-count" style="color:${mc}">${cnt("mastered")}</div></div>`;
+  return h+renderReservePanel(cnt("reserve"),masteredTile)+`</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESERVES — parked words, never quizzed, moved out only by hand or Fill
+// ═══════════════════════════════════════════════════════════
+let _lastFill=null;
+function l1InPlay(b){b=b||getBoxes();return (b.l1||[]).length+(b.l1q||[]).length;}
+function vesselHtml(inPlay,target){
+  const pct=Math.max(0,Math.min(1,inPlay/target));const y=86-56*pct;const over=inPlay>target;
+  return '<svg class="vessel'+(inPlay>=target?" full":"")+'" viewBox="0 0 44 100" width="34" height="76" aria-hidden="true"><defs>'
+   +'<clipPath id="vsl"><path d="M12 30H32C37 36 38 52 36 72Q35 84 30 86H14Q9 84 8 72C6 52 7 36 12 30Z"/></clipPath>'
+   +'<linearGradient id="vslg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE29A"/><stop offset="1" stop-color="#FF8A78"/></linearGradient></defs>'
+   +'<circle cx="22" cy="12" r="5" fill="#FF8A78"/><circle cx="22" cy="12" r="2" fill="#FFE29A"/>'
+   +'<rect x="10" y="22" width="24" height="8" rx="3" fill="#D8C3A5"/>'
+   +'<path d="M12 30H32C37 36 38 52 36 72Q35 84 30 86H14Q9 84 8 72C6 52 7 36 12 30Z" fill="#150F34" fill-opacity=".6"/>'
+   +'<g clip-path="url(#vsl)"><rect x="6" y="'+y.toFixed(1)+'" width="34" height="60" fill="url(#vslg)"/></g>'
+   +'<path d="M12 30H32C37 36 38 52 36 72Q35 84 30 86H14Q9 84 8 72C6 52 7 36 12 30Z" fill="none" stroke="#FFD9C8" stroke-opacity=".8" stroke-width="1"/>'
+   +'</svg>'
+   +(over?'<div style="position:absolute;right:11px;top:70px;font-size:10px;color:var(--sunL)">+'+(inPlay-target)+'</div>':"");
+}
+// Fill order: starred first, then oldest added
+function reservePickOrder(){
+  const b=getBoxes();const wm={};getWords().forEach(w=>{wm[w.id]=w;});
+  return (b.reserve||[]).map((id,i)=>({id,i})).filter(x=>wm[x.id]).sort((a,c)=>{
+    const pa=wm[a.id].priority?1:0,pc=wm[c.id].priority?1:0;
+    if(pa!==pc)return pc-pa;
+    const ta=wm[a.id].createdAt||0,tc=wm[c.id].createdAt||0;
+    return ta!==tc?ta-tc:a.i-c.i;
+  }).map(x=>x.id);
+}
+function renderReservePanel(shownCount,extraHtml){
+  const b=getBoxes();const def=boxDef("reserve");const c=def.color;const rg=hexRgb(c);
+  const total=(b.reserve||[]).length;const wm={};getWords().forEach(w=>{wm[w.id]=w;});
+  const starred=(b.reserve||[]).filter(id=>wm[id]&&wm[id].priority).length;
+  const target=getSettings().l1Target||40;const inPlay=l1InPlay(b);const need=Math.max(0,target-inPlay);
+  const fillLabel=total===0?"Reserves empty":need===0?"L1 at target":`Fill Level 1 · ${Math.min(need,total)}`;
+  const undo=_lastFill&&_lastFill.length?`<button class="btn3" style="width:100%;margin-top:8px;font-size:11px;padding:7px" onclick="undoLastFill()">↶ Undo last move (${_lastFill.length})</button>`:"";
+  return`<div class="reserve-panel">
+    <div class="box-card" onclick="viewBox('reserve')" style="background:rgba(${rg},0.06);border-color:rgba(${rg},0.34)">
+      <div class="box-label" style="color:${c}">Reserves</div><div class="box-count" style="color:${c}">${shownCount}</div>
+      ${starred?`<div style="font-size:9px;color:var(--sun);margin-top:3px">★${starred} first in line</div>`:""}
+    </div>
+    <div class="reserve-ctl">
+      ${vesselHtml(inPlay,target)}
+      <label class="lbl" style="margin-bottom:5px">L1 Target</label>
+      <div class="reserve-row"><input id="rs-target" class="inp" type="number" min="1" max="500" value="${target}" onchange="saveReserveTarget(this.value)" style="max-width:80px"/><span style="font-size:11px;color:var(--muted2)">words</span></div>
+      <div style="font-size:11px;color:var(--muted);margin:8px 0 10px;line-height:1.5">L1 + Queue: <span style="color:var(--sand)">${inPlay}</span> of ${target}</div>
+      <button class="btn1" style="width:100%;justify-content:center;padding:11px 10px;font-size:13px" ${total===0||need===0?"disabled":""} onclick="askFillReserve('target')">${fillLabel}</button>
+      <div style="height:1px;background:var(--border);margin:14px 0 12px"></div>
+      <label class="lbl" style="margin-bottom:5px">Add a number</label>
+      <div class="reserve-row"><input id="rs-n" class="inp" type="number" min="1" placeholder="#" style="max-width:80px"/><button class="btn2" style="flex:1;padding:9px 10px" ${total===0?"disabled":""} onclick="askFillReserve('manual')">Add to L1</button></div>
+      ${undo}
+    </div>
+    ${extraHtml||""}
+  </div>`;
+}
+function saveReserveTarget(v){const n=Math.max(1,Math.min(500,parseInt(v)||40));const s=getSettings();s.l1Target=n;saveSettings(s);toast("Target saved");render();}
+function askFillReserve(mode){
+  const b=getBoxes();const total=(b.reserve||[]).length;const inPlay=l1InPlay(b);const target=getSettings().l1Target||40;
+  let n;
+  if(mode==="target"){n=Math.min(Math.max(0,target-inPlay),total);}
+  else{n=parseInt(document.getElementById("rs-n")?.value);if(!n||n<1){toast("Enter how many to add","var(--sun)");return;}n=Math.min(n,total);}
+  if(n<1){toast(total===0?"Reserves is empty":"L1 is already at target","var(--sun)");return;}
+  const order=reservePickOrder().slice(0,n);const wm={};getWords().forEach(w=>{wm[w.id]=w;});
+  const nStar=order.filter(id=>wm[id]&&wm[id].priority).length;
+  const after=inPlay+n;
+  document.getElementById("modal-root").innerHTML=`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="text-align:center">
+        <div style="font-family:var(--serif);font-size:19px;font-weight:700;color:var(--sand);margin-bottom:10px">Move ${n} word${n!==1?"s":""} to Level 1?</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px;line-height:1.6">From Reserves → Level 1<br>L1 + Queue: ${inPlay} → <strong style="color:var(--sand)">${after}</strong> (target ${target})</div>
+        ${nStar?`<div style="font-size:11px;color:var(--sun);margin-bottom:6px">★ ${nStar} starred word${nStar!==1?"s":""} included</div>`:""}
+        ${mode==="manual"&&after>target?`<div style="font-size:11px;color:var(--muted2);margin-bottom:6px">This goes ${after-target} over your target.</div>`:""}
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:20px">
+          <button class="btn1" onclick="closeModal();doFillReserve(${n})">Move ${n}</button>
+          <button class="btn3" onclick="closeModal()">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+}
+function doFillReserve(n){
+  const ids=reservePickOrder().slice(0,n);if(!ids.length)return;
+  moveWords(ids,"reserve","l1");_lastFill=ids;
+  toast(`Moved ${ids.length} to Level 1 ✓`);render();
+}
+function undoLastFill(){
+  const b=getBoxes();const ids=(_lastFill||[]).filter(id=>(b.l1||[]).includes(id));
+  if(ids.length)moveWords(ids,"l1","reserve");
+  _lastFill=null;toast(`Returned ${ids.length} to Reserves`);render();
+}
+function toggleReserveStar(id){
+  const words=getWords();const w=words.find(x=>x.id===id);if(!w)return;
+  w.priority=!w.priority;saveWords(words);render();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -752,25 +856,89 @@ function renderSummary(){
 // BOXES VIEW
 // ═══════════════════════════════════════════════════════════
 let _activeBoxView="l1";
-function viewBox(id){_activeBoxView=id;setView("boxes");}
+let _boxSearch="";
+function viewBox(id){_activeBoxView=id;_boxSearch="";setView("boxes");}
+function onBoxSearch(val){
+  _boxSearch=val;
+  render();
+  const inp=document.getElementById("box-search-inp");
+  if(inp){const l=inp.value.length;inp.focus();inp.setSelectionRange(l,l);}
+}
+function moveWordBox(wordId,fromBoxId,toBoxId){
+  if(!toBoxId)return;
+  if(fromBoxId&&fromBoxId!=="orphan")removeWordFromBox(wordId,fromBoxId);
+  addWordToBox(wordId,toBoxId);
+  render();
+  const inp=document.getElementById("box-search-inp");
+  if(inp){const l=inp.value.length;inp.focus();inp.setSelectionRange(l,l);}
+}
+function stripAccents(t){return(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();}
 function renderBoxes(){
   const boxes=getBoxes();
+  const searchBar=`<div style="position:relative;margin-bottom:18px">
+    <input class="inp" id="box-search-inp" placeholder="Search Spanish or English…" value="${_boxSearch.replace(/"/g,'&quot;')}"
+      oninput="onBoxSearch(this.value)" autocomplete="off"
+      style="padding-left:36px;font-size:14px"/>
+    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted);pointer-events:none">🔍</span>
+    ${_boxSearch?`<button onclick="onBoxSearch('');document.getElementById('box-search-inp').value=''"
+      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:2px 6px;line-height:1">×</button>`:""}
+  </div>`;
+  const delBtn=(id)=>`<button onclick="deleteWordFull('${id}')" style="background:none;border:none;cursor:pointer;color:rgba(255,123,138,0.35);font-size:20px;padding:3px 7px;line-height:1;transition:color .2s;flex-shrink:0" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='rgba(255,123,138,0.35)'">×</button>`;
+
+  // ── Search mode ──
+  if(_boxSearch.trim()){
+    const q=stripAccents(_boxSearch.trim());
+    const words=getWords();
+    const wordBox={};
+    Object.keys(boxes).forEach(boxId=>(boxes[boxId]||[]).forEach(id=>{wordBox[id]=boxId;}));
+    const matches=words.filter(w=>stripAccents(w.english).includes(q)||stripAccents(w.arabic).includes(q));
+    const boxOpts=BOXES.filter(b=>!b.isQueue).map(b=>`<option value="${b.id}">${b.label}</option>`).join("");
+    const rows=matches.length===0
+      ?`<div style="text-align:center;color:var(--muted);padding:60px 0;font-size:13px">No words found for "${_boxSearch}"</div>`
+      :matches.map(w=>{
+        const boxId=wordBox[w.id]||"orphan";
+        const def=boxId==="orphan"?{label:"Not in box",color:"#AAA090"}:boxDef(boxId);
+        const selectVal=boxId==="orphan"?"":boxId;
+        return`<div class="word-row" style="flex-wrap:wrap;gap:8px">
+          <div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--brandL);flex:0 0 auto;min-width:90px">${w.arabic}</div>
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.english}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">${w.dialect} · ${w.wordType}</div>
+          </div>
+          <select onchange="moveWordBox('${w.id}','${boxId}',this.value)"
+            style="font-size:11px;border:1px solid ${boxId==="orphan"?"rgba(255,123,138,0.4)":"var(--border)"};border-radius:8px;
+              padding:4px 7px;background:${boxId==="orphan"?"rgba(255,123,138,0.06)":"var(--card2)"};
+              color:${def.color};cursor:pointer;font-family:inherit;flex-shrink:0;outline:none">
+            ${boxId==="orphan"?`<option value="" disabled selected style="color:var(--muted)">⚠ not in a box</option>`:""}
+            ${boxOpts.replace(`value="${selectVal}"`,`value="${selectVal}" selected`)}
+          </select>
+          ${delBtn(w.id)}
+        </div>`;
+      }).join("");
+    const orphanCount=matches.filter(w=>!wordBox[w.id]).length;
+    const orphanNote=orphanCount?`<div style="font-size:11px;color:var(--red);margin-bottom:10px">⚠ ${orphanCount} word${orphanCount!==1?"s":""} not assigned to any box — use the dropdown to place them</div>`:"";
+    return`${searchBar}<div style="font-size:11px;color:var(--muted);margin-bottom:10px">${matches.length} result${matches.length!==1?"s":""} across all boxes</div>${orphanNote}${rows}`;
+  }
+
+  // ── Normal box tab mode ──
   const tabs=BOXES.filter(b=>!b.isQueue).map(b=>{
     const cnt=(boxes[b.id]||[]).length;const rg=hexRgb(b.color);const act=b.id===_activeBoxView;
     return`<button class="tab-btn" onclick="viewBox('${b.id}')" style="${act?`background:rgba(${rg},0.12);border-color:${b.color};color:${b.color}`:""}">${b.label} <span style="opacity:.4;font-size:11px">${cnt}</span></button>`;
   }).join("");
-  const def=boxDef(_activeBoxView);const ids=boxes[_activeBoxView]||[];
+  const def=boxDef(_activeBoxView);const isRes=_activeBoxView==="reserve";
+  const ids=isRes?reservePickOrder():(boxes[_activeBoxView]||[]);
   const rows=ids.length===0?`<div style="text-align:center;color:var(--muted);padding:60px 0;font-size:13px">No words here yet.</div>`
     :ids.map(id=>{const w=wordById(id);if(!w)return"";
       return`<div class="word-row">
-        <div style="font-size:20px;font-weight:600;color:var(--brandL);flex:0 0 auto;min-width:90px">${w.arabic}</div>
+        <div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--brandL);flex:0 0 auto;min-width:90px">${w.arabic}</div>
         <div style="flex:1;min-width:0"><div style="font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.english}</div>
           <div style="font-size:10px;color:var(--muted);margin-top:3px">${w.dialect} · ${w.wordType}</div></div>
-        <button onclick="deleteWordFull('${id}')" style="background:none;border:none;cursor:pointer;color:rgba(176,48,48,0.3);font-size:20px;padding:3px 7px;line-height:1;transition:color .2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='rgba(176,48,48,0.3)'">×</button>
+        ${isRes?`<button class="reserve-star${w.priority?" on":""}" title="Fill first" onclick="toggleReserveStar('${id}')">${w.priority?"★":"☆"}</button>`:""}
+        ${delBtn(id)}
       </div>`;}).join("");
-  return`<div class="tab-strip">${tabs}</div>
-    <div style="margin-bottom:18px"><div style="font-size:20px;font-weight:700;color:${def.color}">${def.label}</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:3px">${ids.length} word${ids.length!==1?"s":""}</div></div>${rows}`;
+  return`${searchBar}<div class="tab-strip">${tabs}</div>
+    <div style="margin-bottom:18px"><div style="font-family:var(--serif);font-size:22px;font-weight:700;color:${def.color}">${def.label}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:3px">${ids.length} word${ids.length!==1?"s":""}${isRes?" · Fill order: ★ first, then oldest added":""}</div></div>${rows}`;
 }
 function deleteWordFull(id){
   document.getElementById("modal-root").innerHTML=`
@@ -830,8 +998,9 @@ function renderManualAdd(){
         <select id="f-dial" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px">${VARIANTS.map(d=>`<option>${d}</option>`).join("")}</select></div>
     </div>
     ${!sa?`<div class="field"><label class="lbl">Starting Box</label>
-      <select id="f-box" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px">${BOXES.map(b=>`<option value="${b.id}"${b.id==="l1"?" selected":""}>${b.label}</option>`).join("")}</select>
-      <div style="font-size:10px;color:var(--muted2);margin-top:5px">Defaults to Level 1. Use to migrate words from other systems.</div>
+      <select id="f-box" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px" onchange="document.getElementById('f-star-wrap').style.display=this.value==='reserve'?'block':'none'">${BOXES.map(b=>`<option value="${b.id}"${b.id==="l1"?" selected":""}>${b.label}</option>`).join("")}</select>
+      <div style="font-size:10px;color:var(--muted2);margin-top:5px">Defaults to Level 1. Use to migrate words from other systems, or park words in Reserves.</div>
+      <label id="f-star-wrap" style="display:none;margin-top:10px;font-size:12px;color:var(--muted);cursor:pointer"><input type="checkbox" id="f-star" style="margin-right:7px"/>★ Fill first (priority in Reserves)</label>
     </div>`:`<div style="background:rgba(255,138,120,0.07);border:1px solid rgba(255,138,120,0.2);border-radius:9px;padding:11px 14px;margin-bottom:18px;font-size:12px;color:var(--muted)">Session in progress — new words go to the corresponding queue box.</div>`}
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn1" onclick="submitManual(false)">Save Word</button>
@@ -854,51 +1023,67 @@ function submitManual(andAnother){
   if(!ar||!en)return;
   const word={id:uid(),arabic:ar,english:en,example:document.getElementById("f-ex")?.value?.trim()||"",
     wordType:document.getElementById("f-type")?.value||"Noun",dialect:document.getElementById("f-dial")?.value||"Neutral",createdAt:Date.now()};
-  saveWords([...getWords(),word]);
   const sess=getSession();const sa=sess&&sess.active;
   const tb=sa?(SESSION_QUEUE_FOR_BOX[sess.steps[sess.stepIdx]?.box||"l1"]||"l1q"):(document.getElementById("f-box")?.value||"l1");
+  if(tb==="reserve"&&document.getElementById("f-star")?.checked)word.priority=true;
+  saveWords([...getWords(),word]);
   addWordToBox(word.id,tb);toast(`Added to ${boxDef(tb).label} ✓`);
   if(andAnother){document.getElementById("f-ar").value="";document.getElementById("f-en").value="";document.getElementById("f-ex").value="";document.getElementById("f-ar").focus();}
   else setView("home");
 }
 
 // ── Quick Add ──
-let _qaState={variant:"Neutral",wordType:"Noun",targetBox:"l1q",loading:false,preview:null,error:null};
+let _qaState={variant:"Neutral",wordType:"Noun",targetBox:"l1",priority:false,loading:false,preview:null,error:null,mode:"english"};
 function renderQuickAdd(){
   const s=_qaState;
   const sess=getSession();const sa=sess&&sess.active;
   const boxOptions=BOXES.map(b=>`<option value="${b.id}"${b.id===s.targetBox?" selected":""}>${b.label}</option>`).join("");
   return`<div class="card">
-    <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.7">
-      Type an English word or phrase, choose variant and type — the AI generates a Spanish card with key forms and an example sentence.
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button onclick="_qaState.mode='english';_qaState.preview=null;render()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid ${s.mode==='english'?'rgba(255,160,130,0.6)':'var(--border)'};background:${s.mode==='english'?'rgba(255,138,120,0.14)':'transparent'};cursor:pointer;font-size:12px;color:${s.mode==='english'?'var(--sunL)':'var(--muted)'};font-weight:${s.mode==='english'?'800':'600'};transition:all .2s">
+        🇬🇧 English → Spanish
+      </button>
+      <button onclick="_qaState.mode='spanish';_qaState.preview=null;render()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid ${s.mode==='spanish'?'rgba(255,160,130,0.6)':'var(--border)'};background:${s.mode==='spanish'?'rgba(255,138,120,0.14)':'transparent'};cursor:pointer;font-size:12px;color:${s.mode==='spanish'?'var(--sunL)':'var(--muted)'};font-weight:${s.mode==='spanish'?'800':'600'};transition:all .2s">
+        🔤 Spanish → Full Card
+      </button>
     </div>
-    <div class="field">
-      <label class="lbl">English Word / Phrase *</label>
-      <input id="qa-en" class="inp" placeholder="e.g. to run, house, beautiful…" autocomplete="off"
-        onkeydown="if(event.key==='Enter')generateQuickAdd()"/>
-    </div>
+    ${s.mode==='english'
+      ? `<div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.7">Type an English word or phrase, choose variant and type — the AI generates a Spanish card with key forms and an example sentence.</div>
+         <div class="field"><label class="lbl">English Word / Phrase *</label>
+         <input id="qa-en" class="inp" placeholder="e.g. to run, house, beautiful…" autocomplete="off"
+           onkeydown="if(event.key==='Enter')generateQuickAdd()"/></div>`
+      : `<div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.7">Type any Spanish word (any form — conjugated, plural, feminine, etc.) — the AI finds the base form, detects the type, and generates the full card.</div>
+         <div class="field"><label class="lbl">Spanish Word *</label>
+         <input id="qa-es-in" class="inp" placeholder="Escribe una palabra en español…" autocomplete="off"
+           style="font-size:20px;font-weight:600;color:var(--brandL)"
+           onkeydown="if(event.key==='Enter')generateFromSpanish()"/></div>`
+    }
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
       <div><label class="lbl">Variant</label>
         <select id="qa-dial" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px"
           onchange="_qaState.variant=this.value">
           ${VARIANTS.map(d=>`<option${d===s.variant?" selected":""}>${d}</option>`).join("")}
         </select></div>
-      <div><label class="lbl">Word Type</label>
-        <select id="qa-type" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px"
-          onchange="_qaState.wordType=this.value">
-          ${WORD_TYPES.map(t=>`<option${t===s.wordType?" selected":""}>${t}</option>`).join("")}
-        </select></div>
+      ${s.mode==='english'
+        ? `<div><label class="lbl">Word Type</label>
+           <select id="qa-type" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px"
+             onchange="_qaState.wordType=this.value">
+             ${WORD_TYPES.map(t=>`<option${t===s.wordType?" selected":""}>${t}</option>`).join("")}
+           </select></div>`
+        : `<div style="display:flex;align-items:flex-end;padding-bottom:2px"><div style="font-size:11px;color:var(--muted);font-style:italic;line-height:1.6">Word type is detected automatically from the Spanish.</div></div>`
+      }
     </div>
     ${!sa?`<div class="field">
       <label class="lbl">Save to Box</label>
-      <select id="qa-box" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px" onchange="_qaState.targetBox=this.value">
+      <select id="qa-box" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px" onchange="_qaState.targetBox=this.value;document.getElementById('qa-star-wrap').style.display=this.value==='reserve'?'block':'none'">
         ${boxOptions}
       </select>
-    </div>`:`<div style="background:rgba(255,138,120,0.07);border:1px solid rgba(255,138,120,0.2);border-radius:9px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--muted)">Session in progress — words go to the queue box.</div>`}
-    <button class="btn1" onclick="generateQuickAdd()" ${s.loading?"disabled":""} style="margin-bottom:20px">
+      <label id="qa-star-wrap" style="display:${s.targetBox==='reserve'?'block':'none'};margin-top:10px;font-size:12px;color:var(--muted);cursor:pointer"><input type="checkbox" id="qa-star" ${s.priority?"checked":""} onchange="_qaState.priority=this.checked" style="margin-right:7px"/>★ Fill first (priority in Reserves)</label>
+    </div>`:`<div style="background:rgba(255,138,120,0.07);border:1px solid rgba(255,138,120,0.2);border-radius:9px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--muted)">Session in progress — new words go to the appropriate queue box.</div>`}
+    <button class="btn1" onclick="${s.mode==='spanish'?'generateFromSpanish':'generateQuickAdd'}()" ${s.loading?"disabled":""} style="margin-bottom:20px">
       ${s.loading?`<span class="spinner"></span> Generating…`:"✦ Generate Card"}
     </button>
-    ${s.error?`<div style="color:var(--red);font-size:12px;margin-bottom:16px;padding:10px 14px;background:rgba(176,48,48,0.06);border-radius:8px">${s.error}</div>`:""}
+    ${s.error?`<div style="color:var(--red);font-size:12px;margin-bottom:16px;padding:10px 14px;background:rgba(255,123,138,0.08);border-radius:8px">${s.error}</div>`:""}
     ${s.preview?renderQAPreview(s.preview):""}
   </div>`;
 }
@@ -983,34 +1168,82 @@ function saveQA(){
   const editedForms={};
   fieldKeys.forEach((label,i)=>{const val=document.getElementById(`qa-ef-${i}`)?.innerText?.trim()||"";if(val)editedForms[label]=val;});
   const word={id:uid(),arabic,english,example,wordType:p.wordType||"Noun",dialect:p.variant||"Neutral",forms:editedForms,createdAt:Date.now()};
-  saveWords([...getWords(),word]);
   const sess=getSession();const sa=sess&&sess.active;
-  const tb=sa?(SESSION_QUEUE_FOR_BOX[sess.steps[sess.stepIdx]?.box||"l1"]||"l1q"):(_qaState.targetBox||"l1q");
+  const tb=sa?(SESSION_QUEUE_FOR_BOX[sess.steps[sess.stepIdx]?.box||"l1"]||"l1q"):(_qaState.targetBox||"l1");
+  if(tb==="reserve"&&_qaState.priority)word.priority=true;
+  saveWords([...getWords(),word]);
   addWordToBox(word.id,tb);toast(`"${english}" added to ${boxDef(tb).label} ✓`);
   _qaState={..._qaState,preview:null};render();
 }
 
+async function generateFromSpanish(){
+  const esIn=document.getElementById("qa-es-in")?.value?.trim()||"";
+  const dial=document.getElementById("qa-dial")?.value||_qaState.variant;
+  if(!esIn){toast("Enter a Spanish word first","var(--red)");return;}
+  _qaState={..._qaState,variant:dial,loading:true,error:null,preview:null};render();
+  const vNote=variantNote(dial);
+  const prompt=`You are an expert Spanish linguist. The user has typed a Spanish word that may be in ANY form (conjugated verb, plural noun, feminine adjective, etc.).
+
+Your tasks:
+1. Identify the BASE FORM (dictionary citation form): infinitive for verbs, singular for nouns (with article if gendered, e.g. "la casa"), masculine singular for adjectives. Use correct accents.
+2. Determine the word type: Verb, Noun, Adjective, Adverb, Phrase, or Other.
+3. Provide the primary English meaning (concise, 1-6 words).
+4. Generate the grammatical forms:
+   - Verb -> extraFields: {"Infinitivo":"infinitive","Yo (presente)":"1st person singular present","Participio":"past participle"}
+   - Adjective -> extraFields: {"Masculino":"masculine singular","Femenino":"feminine singular"}
+   - Otherwise: extraFields = {}
+5. Compose one short, natural example sentence in ${vNote} using the word, plus an English translation.
+
+Input word: "${esIn}"
+Assumed variant: ${vNote}
+
+Respond ONLY with this exact JSON, no markdown:
+{"arabic":"base form","english":"meaning","wordType":"Verb or Noun or Adjective or Adverb or Phrase or Other","extraFields":{},"exampleEs":"sentence","exampleEn":"english translation"}`;
+  try{
+    const r=await fetch(apiUrl(),{method:"POST",headers:apiHeaders(),
+      body:JSON.stringify({model:"claude-sonnet-4-5-20250929",max_tokens:800,messages:[{role:"user",content:prompt}]})});
+    const data=await r.json();const raw=data.content?.find(c=>c.type==="text")?.text||"";
+    const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
+    _qaState={..._qaState,loading:false,preview:{...parsed,variant:dial}};
+  }catch(e){_qaState={..._qaState,loading:false,error:"Generation failed — check your API key and connection."};}
+  render();
+}
+
 // ── Bulk Add ──
-let _bulkState={loading:false,results:null,targetBox:"l1q"};
+let _bulkState={loading:false,results:null,targetBox:"l1",priority:false,mode:"english"};
 function renderBulkAdd(){
   const boxOptions=BOXES.map(b=>`<option value="${b.id}"${b.id===_bulkState.targetBox?" selected":""}>${b.label}</option>`).join("");
+  const m=_bulkState.mode;
   return`<div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button onclick="_bulkState.mode='english';_bulkState.results=null;render()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid ${m==='english'?'rgba(255,160,130,0.6)':'var(--border)'};background:${m==='english'?'rgba(255,138,120,0.14)':'transparent'};cursor:pointer;font-size:12px;color:${m==='english'?'var(--sunL)':'var(--muted)'};font-weight:${m==='english'?'800':'600'};transition:all .2s">
+        🇬🇧 English → Spanish
+      </button>
+      <button onclick="_bulkState.mode='spanish';_bulkState.results=null;render()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid ${m==='spanish'?'rgba(255,160,130,0.6)':'var(--border)'};background:${m==='spanish'?'rgba(255,138,120,0.14)':'transparent'};cursor:pointer;font-size:12px;color:${m==='spanish'?'var(--sunL)':'var(--muted)'};font-weight:${m==='spanish'?'800':'600'};transition:all .2s">
+        🔤 Spanish → Full Card
+      </button>
+    </div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:6px;line-height:1.6">
-      One entry per line: <strong style="color:var(--sand)">English word or phrase, Variant</strong>
+      ${m==='english'
+        ?`One entry per line: <strong style="color:var(--sand)">English word or phrase, Variant</strong>`
+        :`One entry per line: <strong style="color:var(--sand)">Spanish word (any form), Variant</strong>`}
     </div>
     <div style="font-size:11px;color:var(--muted2);margin-bottom:6px;line-height:1.7">
-      Available variants: ${VARIANTS.join(", ")}
+      Available variants: ${VARIANTS.join(", ")}${m==='spanish'?" · Variant is optional — Neutral is assumed if left off.":""}
     </div>
-    <div style="font-size:11px;color:var(--muted2);margin-bottom:18px">Word type is detected automatically.</div>
+    <div style="font-size:11px;color:var(--muted2);margin-bottom:18px">${m==='english'?"Word type is detected automatically.":"The AI finds the base (dictionary) form and detects the word type automatically."}</div>
     <div class="field">
       <label class="lbl">Save all words to</label>
-      <select id="bulk-box" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px" onchange="_bulkState.targetBox=this.value">
+      <select id="bulk-box" class="inp" style="cursor:pointer;font-size:13px;padding:10px 12px" onchange="_bulkState.targetBox=this.value;document.getElementById('bulk-star-wrap').style.display=this.value==='reserve'?'block':'none'">
         ${boxOptions}
       </select>
+      <label id="bulk-star-wrap" style="display:${_bulkState.targetBox==='reserve'?'block':'none'};margin-top:10px;font-size:12px;color:var(--muted);cursor:pointer"><input type="checkbox" id="bulk-star" ${_bulkState.priority?"checked":""} onchange="_bulkState.priority=this.checked" style="margin-right:7px"/>★ Fill first (priority in Reserves — applies to this whole batch)</label>
     </div>
     <div class="field">
       <label class="lbl">Words to add</label>
-      <textarea id="bulk-ta" class="bulk-ta" placeholder="to understand, Mexico&#10;house, Argentina&#10;beautiful, Spain&#10;to find out, Caribbean&#10;friend, Colombia"></textarea>
+      ${m==='english'
+        ?`<textarea id="bulk-ta" class="bulk-ta" placeholder="to understand, Mexico&#10;house, Argentina&#10;beautiful, Spain&#10;to find out, Caribbean&#10;friend, Colombia"></textarea>`
+        :`<textarea id="bulk-ta" class="bulk-ta" placeholder="entiendo, Mexico&#10;casas, Argentina&#10;hermosas, Spain&#10;amigo, Colombia"></textarea>`}
     </div>
     <button class="btn1" onclick="runBulkAdd()" ${_bulkState.loading?"disabled":""} style="margin-bottom:20px">
       ${_bulkState.loading?`<span class="spinner"></span> Generating (this may take a moment)…`:"✦ Generate All Cards"}
@@ -1019,33 +1252,123 @@ function renderBulkAdd(){
   </div>`;
 }
 function renderBulkResults(results){
-  const saved=results.filter(r=>!r.error).length;
-  const tb=_bulkState.targetBox||"l1q";
-  const rows=results.map(r=>r.error
-    ?`<div class="bulk-result err"><span>✗</span><span>"${r.input}" — ${r.error}</span></div>`
-    :`<div class="bulk-result ok"><span>✓</span><span style="font-size:15px;font-weight:600;color:var(--brandL)">${r.arabic}</span><span style="font-size:12px;color:var(--muted);flex:1">${r.english} · ${r.variant}</span></div>`
-  ).join("");
+  const tb=_bulkState.targetBox||"l1";
+  const saveable=results.filter(r=>!r.error&&!r.removed).length;
+  const rows=results.map((r,i)=>{
+    if(r.error)return`<div class="bulk-result err"><span>✗</span><span>"${r.input}" — ${r.error}</span></div>`;
+    if(r.removed)return`<div class="bulk-result" style="opacity:.45;text-decoration:line-through;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;margin-bottom:5px;padding:8px 12px;display:flex;align-items:center;gap:10px">
+      <span style="font-family:var(--serif);font-size:15px;color:var(--muted);flex:1">${r.word.arabic}</span>
+      <span style="font-size:11px;color:var(--muted)">removed</span>
+      <button onclick="restoreBulkWord(${i})" style="background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 9px;font-family:inherit">undo</button>
+    </div>`;
+    return`<div class="bulk-result ok" style="flex-direction:column;align-items:stretch;padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer" onclick="toggleBulkExpand(${i})">
+        <span style="color:var(--green);flex-shrink:0;font-size:14px">✓</span>
+        <span style="font-family:var(--serif);font-size:17px;font-weight:600;color:var(--brandL);flex-shrink:0">${r.word.arabic}</span>
+        <span style="font-size:12px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.word.english} · ${r.word.dialect}</span>
+        <span style="font-size:11px;color:var(--muted2);flex-shrink:0;margin-right:4px">${r.expanded?"▲":"▼"}</span>
+        <button onclick="event.stopPropagation();removeBulkWord(${i})" title="Remove"
+          style="background:none;border:none;cursor:pointer;color:rgba(255,123,138,0.4);font-size:20px;padding:2px 5px;line-height:1;flex-shrink:0;transition:color .2s"
+          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='rgba(255,123,138,0.4)'">×</button>
+      </div>
+      ${r.expanded?`<div style="border-top:1px solid var(--border);padding:14px 14px 12px;background:rgba(255,138,120,0.04)">
+        <div style="margin-bottom:11px">
+          <div class="lbl">Spanish (main form)</div>
+          <div id="bedit-ar-${i}" contenteditable="true"
+            style="font-family:var(--serif);font-size:24px;color:var(--brandL);outline:none;border-bottom:1px dashed rgba(255,138,120,0.35);padding-bottom:4px;min-height:34px">${r.word.arabic}</div>
+        </div>
+        <div style="margin-bottom:11px">
+          <div class="lbl">English</div>
+          <div id="bedit-en-${i}" contenteditable="true"
+            style="font-size:14px;outline:none;border-bottom:1px dashed rgba(255,255,255,0.22);padding-bottom:4px;min-height:22px">${r.word.english}</div>
+        </div>
+        ${Object.entries(r.word.forms||{}).map(([lbl,val],fi)=>`<div style="margin-bottom:9px">
+          <div class="lbl">${lbl}</div>
+          <div id="bedit-form-${i}-${fi}" contenteditable="true"
+            style="font-family:var(--serif);font-size:16px;color:var(--brandL);outline:none;border-bottom:1px dashed rgba(255,138,120,0.25);padding-bottom:2px;min-height:26px">${val}</div>
+        </div>`).join("")}
+        ${r.word.example?`<div style="margin-bottom:9px">
+          <div class="lbl">Example</div>
+          <div style="font-family:var(--serif);font-size:16px;font-style:italic;color:var(--sunL)">${r.word.example.split(" — ")[0]||""}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">${r.word.example.split(" — ")[1]||""}</div>
+        </div>`:""}
+        <div style="font-size:10px;color:var(--muted2);margin-bottom:10px">${r.word.wordType} · ${r.word.dialect}</div>
+        <button onclick="applyBulkEdits(${i})"
+          style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;transition:all .2s"
+          onmouseover="this.style.borderColor='var(--brand)';this.style.color='var(--brandL)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Apply edits ✓</button>
+      </div>`:""}
+    </div>`;
+  }).join("");
   return`<div style="border-top:1px solid var(--border);padding-top:18px">
-    ${sHead(`Results — ${saved}/${results.length} saved to ${boxDef(tb).label}`)}${rows}
-    <button class="btn3" style="margin-top:14px" onclick="_bulkState.results=null;render()">Clear</button>
+    ${sHead(`${saveable} card${saveable!==1?"s":""} ready — review, edit or remove before saving`)}${rows}
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+      ${saveable?`<button class="btn1" onclick="saveBulkWords()">Save ${saveable} Card${saveable!==1?"s":""} to ${boxDef(tb).label}</button>`:""}
+      <button class="btn3" onclick="_bulkState.results=null;render()">Clear All</button>
+    </div>
+    <div style="font-size:10px;color:var(--muted2);margin-top:8px">▼ to expand & edit a card · × to remove · Apply edits to confirm changes</div>
   </div>`;
+}
+function removeBulkWord(idx){if(!_bulkState.results)return;_bulkState.results[idx].removed=true;_bulkState.results[idx].expanded=false;render();}
+function restoreBulkWord(idx){if(!_bulkState.results)return;_bulkState.results[idx].removed=false;render();}
+function toggleBulkExpand(idx){if(!_bulkState.results)return;_bulkState.results[idx].expanded=!_bulkState.results[idx].expanded;render();}
+function applyBulkEdits(idx){
+  if(!_bulkState.results)return;
+  const r=_bulkState.results[idx];
+  const arEl=document.getElementById(`bedit-ar-${idx}`);
+  const enEl=document.getElementById(`bedit-en-${idx}`);
+  if(arEl)r.word.arabic=arEl.innerText.trim()||r.word.arabic;
+  if(enEl)r.word.english=enEl.innerText.trim()||r.word.english;
+  Object.keys(r.word.forms||{}).forEach((lbl,fi)=>{
+    const el=document.getElementById(`bedit-form-${idx}-${fi}`);
+    if(el){const v=el.innerText.trim();if(v)r.word.forms[lbl]=v;}
+  });
+  toast("Edits saved","var(--green)");
+}
+function saveBulkWords(){
+  if(!_bulkState.results)return;
+  const tb=_bulkState.targetBox||"l1";
+  const toSave=_bulkState.results.filter(r=>!r.error&&!r.removed);
+  if(!toSave.length){toast("Nothing to save","var(--muted)");return;}
+  let words=getWords();
+  toSave.forEach(r=>{if(tb==="reserve"&&_bulkState.priority)r.word.priority=true;words=[...words,r.word];addWordToBox(r.word.id,tb);});
+  saveWords(words);
+  toast(`${toSave.length} card${toSave.length!==1?"s":""} saved to ${boxDef(tb).label} ✓`);
+  _bulkState={..._bulkState,results:null};render();
 }
 async function runBulkAdd(){
   const raw=document.getElementById("bulk-ta")?.value||"";
   const lines=raw.split("\n").map(l=>l.trim()).filter(Boolean);
   if(!lines.length){toast("Enter at least one word","var(--red)");return;}
-  const targetBox=_bulkState.targetBox||"l1q";
+  const mode=_bulkState.mode||"english";
   _bulkState={..._bulkState,loading:true,results:null};render();
   const results=[];
   for(const line of lines){
     const parts=line.split(",").map(p=>p.trim());
-    const engInput=parts[0]||"";
+    const mainInput=parts[0]||"";
     const variantRaw=parts[1]||"Neutral";
     const variant=VARIANTS.find(d=>d.toLowerCase()===variantRaw.toLowerCase())||"Neutral";
-    if(!engInput){results.push({input:line,error:"Could not parse"});continue;}
+    if(!mainInput){results.push({input:line,error:"Could not parse",removed:false,expanded:false});continue;}
     const vNote=variantNote(variant);
-    const prompt=`You are an expert Spanish linguist. Generate a vocabulary flashcard.
-English: "${engInput}"
+    const prompt=mode==="spanish"
+      ?`You are an expert Spanish linguist. The input below may be in ANY form (conjugated verb, plural noun, feminine adjective, etc.).
+Your tasks:
+1. Identify the BASE FORM (dictionary citation form): infinitive for verbs, singular for nouns, masculine singular for adjectives. Use correct accents.
+2. Determine the word type: Verb, Noun, Adjective, Adverb, Phrase, or Other.
+3. Provide the primary English meaning (concise, 1-6 words).
+4. Generate the grammatical forms:
+   - Verb -> extraFields MUST have exactly: "Infinitivo", "Yo (presente)", "Participio".
+   - Adjective -> extraFields MUST have exactly: "Masculino", "Femenino".
+   - Otherwise: extraFields = {}.
+5. Compose one short natural example sentence in ${vNote} using the word, plus its English translation.
+
+Input word: "${mainInput}"
+Assumed variant: ${vNote}
+
+Respond ONLY with this exact JSON structure, no markdown:
+{"arabic":"base form","english":"meaning","wordType":"Verb or Noun or Adjective or Adverb or Phrase or Other","extraFields":{},"exampleEs":"sentence","exampleEn":"english translation"}`
+      :`You are an expert Spanish linguist. Generate a vocabulary flashcard.
+English: "${mainInput}"
 Variant: ${vNote}
 Detect word type automatically.
 
@@ -1056,17 +1379,17 @@ Otherwise: extraFields = {}.
 Also provide one short natural example sentence in ${vNote}, plus its English translation.
 
 Respond ONLY with this exact JSON, no markdown:
-{"arabic":"main Spanish form","english":"${engInput}","wordType":"Verb or Noun or Adjective or Phrase or Other","extraFields":{},"exampleEs":"sentence","exampleEn":"translation"}`;
+{"arabic":"main Spanish form","english":"${mainInput}","wordType":"Verb or Noun or Adjective or Adverb or Phrase or Other","extraFields":{},"exampleEs":"sentence","exampleEn":"translation"}`;
     try{
       const r=await fetch(apiUrl(),{method:"POST",headers:apiHeaders(),
-        body:JSON.stringify({model:"claude-sonnet-4-5-20250929",max_tokens:500,messages:[{role:"user",content:prompt}]})});
+        body:JSON.stringify({model:"claude-sonnet-4-5-20250929",max_tokens:600,messages:[{role:"user",content:prompt}]})});
       const data=await r.json();const raw2=data.content?.find(c=>c.type==="text")?.text||"";
       const p=JSON.parse(raw2.replace(/```json|```/g,"").trim());
       const ex=p.exampleEs?(p.exampleEn?`${p.exampleEs} — ${p.exampleEn}`:p.exampleEs):"";
-      const word={id:uid(),arabic:p.arabic,english:p.english||engInput,example:ex,wordType:p.wordType||"Other",dialect:variant,forms:p.extraFields||{},createdAt:Date.now()};
-      saveWords([...getWords(),word]);addWordToBox(word.id,targetBox);
-      results.push({arabic:p.arabic,english:p.english||engInput,variant,input:line});
-    }catch(e){results.push({input:line,error:"Generation failed"});}
+      const word={id:uid(),arabic:p.arabic,english:p.english||(mode==="spanish"?"":mainInput),example:ex,wordType:p.wordType||"Other",dialect:variant,forms:p.extraFields||{},createdAt:Date.now()};
+      // Don't save yet — user reviews first
+      results.push({word,input:line,error:null,removed:false,expanded:false});
+    }catch(e){results.push({input:line,error:"Generation failed",removed:false,expanded:false});}
   }
   _bulkState={..._bulkState,loading:false,results};render();
 }
@@ -1110,6 +1433,11 @@ function renderStats(){
       <button class="btn1" onclick="exportData()" style="font-size:13px;padding:11px 20px">⬇ Export Backup</button>
       <button class="btn2" onclick="document.getElementById('import-file').click()" style="font-size:13px;padding:10px 20px">⬆ Import Backup</button>
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)"/>
+    </div>
+    <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Import Words</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">Paste JSON exported from another tool (palabritas-import-v1) to add new cards — this only adds words, it never touches your existing data. They land in Level 1.</div>
+      <button class="btn3" onclick="openImportWordsModal()" style="font-size:12px;padding:7px 14px">⬆ Import Words</button>
     </div>
     <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border)">
       <div style="font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Cloudflare & PIN</div>
@@ -1170,6 +1498,105 @@ function _importConfirmed(){
   window._pendingImport=null;
   toast("Import successful — reloading…");
   setTimeout(()=>location.reload(),1200);
+}
+
+// ═══════════════════════════════════════════════════════════
+// IMPORT WORDS — paste JSON from an external tool; only ADDS cards,
+// never touches existing words/boxes/stats/session. Not to be
+// confused with "Import Backup", which replaces everything.
+// Entry: {es, en, variant?, pos?, example?, forms?{label:value}, added?}
+// ═══════════════════════════════════════════════════════════
+const IMPORT_WORDS_FORMAT="palabritas-import-v1";
+function importKey(t){return(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim().toLowerCase();}
+function importVariantLabel(v){const t=(v||"").trim().toLowerCase();return VARIANTS.find(x=>x.toLowerCase()===t)||"Neutral";}
+function importPosLabel(p){const t=(p||"").trim().toLowerCase();return WORD_TYPES.find(x=>x.toLowerCase()===t)||"Other";}
+function mapImportEntry(raw){
+  const es=(raw.es||raw.word||"").trim();const en=(raw.en||"").trim();
+  const forms={};
+  if(raw.forms&&typeof raw.forms==="object"&&!Array.isArray(raw.forms))Object.entries(raw.forms).forEach(([k,v])=>{if(typeof v==="string"&&v.trim())forms[k]=v.trim();});
+  [["plural","Plural"],["feminine","Femenino"],["masculine","Masculino"],["infinitive","Infinitivo"],["participle","Participio"]].forEach(([k,l])=>{if(typeof raw[k]==="string"&&raw[k].trim())forms[l]=raw[k].trim();});
+  let createdAt=Date.now();const t=Date.parse((raw.added||"").trim());if(!isNaN(t))createdAt=t;
+  return{id:uid(),arabic:es,english:en,example:(raw.example||"").trim(),wordType:importPosLabel(raw.pos),dialect:importVariantLabel(raw.variant),forms,createdAt};
+}
+let _importWordsState={text:"",error:null,result:null};
+function openImportWordsModal(){_importWordsState={text:"",error:null,result:null};renderImportWordsModal();}
+function closeImportWordsModal(){closeModal();}
+function renderImportWordsModal(){
+  const s=_importWordsState;
+  const taVal=(s.text||"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  document.getElementById("modal-root").innerHTML=`
+    <div class="modal-overlay" onclick="if(event.target===this)closeImportWordsModal()">
+      <div class="modal">
+        <div style="font-family:var(--serif);font-size:19px;font-weight:700;color:var(--sand);margin-bottom:6px">Import Words</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">Paste JSON exported as <span style="color:var(--sunL)">${IMPORT_WORDS_FORMAT}</span> — or a bare array of word objects with <code>es</code> and <code>en</code>. This only adds new cards to Level 1; it never changes existing words or boxes.</div>
+        <textarea id="import-words-ta" class="bulk-ta" style="min-height:200px;font-size:12px;line-height:1.6" placeholder='{"format":"${IMPORT_WORDS_FORMAT}","words":[{"es":"la casa","en":"the house","variant":"Neutral","pos":"Noun"}]}' oninput="_importWordsState.text=this.value">${taVal}</textarea>
+        ${s.error?`<div style="color:var(--red);font-size:12px;margin-top:10px;padding:10px 12px;background:rgba(255,123,138,0.08);border-radius:8px;line-height:1.5">${s.error}</div>`:""}
+        ${s.result?renderImportWordsResult(s.result):""}
+        <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+          <button class="btn3" onclick="closeImportWordsModal()">${s.result?"Done":"Cancel"}</button>
+          <button class="btn1" onclick="runWordImport()">${s.result?"Import Again":"Import"}</button>
+        </div>
+      </div>
+    </div>`;
+  const ta=document.getElementById("import-words-ta");
+  if(ta){ta.focus();const len=ta.value.length;ta.setSelectionRange(len,len);}
+}
+function renderImportWordsResult(r){
+  const dupList=r.duplicates.length?`<details style="margin-top:8px">
+    <summary style="cursor:pointer;font-size:11px;color:var(--muted)">Show ${r.duplicates.length} skipped duplicate${r.duplicates.length!==1?"s":""}</summary>
+    <div style="margin-top:8px;max-height:160px;overflow-y:auto">${r.duplicates.map(d=>`<div style="font-size:12px;color:var(--muted);padding:5px 0;border-bottom:1px solid var(--border)"><span style="font-family:var(--serif);color:var(--brandL);font-size:15px">${d.es}</span> — ${d.en} <span style="color:var(--muted2)">(${d.variant}, already in your deck)</span></div>`).join("")}</div>
+  </details>`:"";
+  const invList=r.invalid.length?`<details style="margin-top:8px">
+    <summary style="cursor:pointer;font-size:11px;color:var(--muted)">Show ${r.invalid.length} invalid entr${r.invalid.length!==1?"ies":"y"}</summary>
+    <div style="margin-top:8px;max-height:160px;overflow-y:auto">${r.invalid.map(x=>`<div style="font-size:12px;color:var(--muted);padding:5px 0;border-bottom:1px solid var(--border)">Entry ${x.index+1}: ${x.reason}</div>`).join("")}</div>
+  </details>`:"";
+  return`<div style="margin-top:14px;padding:12px 14px;background:rgba(111,214,160,0.07);border:1px solid rgba(111,214,160,0.22);border-radius:10px">
+    <div style="font-size:13px;color:var(--sand)">Imported <strong style="color:var(--green)">${r.imported}</strong>, skipped <strong style="color:var(--sun)">${r.duplicates.length}</strong> duplicate${r.duplicates.length!==1?"s":""}, <strong style="color:var(--red)">${r.invalid.length}</strong> invalid.</div>
+    ${dupList}${invList}
+  </div>`;
+}
+function runWordImport(){
+  const ta=document.getElementById("import-words-ta");
+  const raw=ta?ta.value:(_importWordsState.text||"");
+  _importWordsState.text=raw;
+  const fail=(msg)=>{_importWordsState={..._importWordsState,error:msg,result:null};renderImportWordsModal();};
+  let parsed;
+  try{parsed=JSON.parse(raw);}
+  catch(e){return fail("That isn't valid JSON — check for a missing bracket, quote, or trailing comma.");}
+  let list;
+  if(Array.isArray(parsed)){list=parsed;}
+  else if(parsed&&typeof parsed==="object"&&Array.isArray(parsed.words)){
+    if(parsed.format!==IMPORT_WORDS_FORMAT)return fail(`Unrecognized format "${parsed.format||"(none)"}" — expected "${IMPORT_WORDS_FORMAT}".`);
+    list=parsed.words;
+  }else return fail(`Expected a "words" array (${IMPORT_WORDS_FORMAT}) or a bare array of word objects.`);
+  if(!list.length)return fail("No words found in that JSON.");
+
+  // Dedupe against words already in the app, by Spanish (accents stripped) + variant
+  const existingWords=getWords();
+  const seen=new Set(existingWords.map(w=>importKey(w.arabic)+"|"+w.dialect));
+  const toAdd=[];const duplicates=[];const invalid=[];
+  list.forEach((entry,i)=>{
+    if(!entry||typeof entry!=="object"||Array.isArray(entry)){invalid.push({index:i,reason:"Not a word object"});return;}
+    const esRaw=(entry.es||entry.word||"").trim();const enRaw=(entry.en||"").trim();
+    if(!esRaw||!enRaw){invalid.push({index:i,reason:!esRaw&&!enRaw?'Missing "es" and "en"':!esRaw?'Missing "es"':'Missing "en"'});return;}
+    const word=mapImportEntry(entry);
+    const key=importKey(word.arabic)+"|"+word.dialect;
+    if(seen.has(key)){duplicates.push({es:word.arabic,en:word.english,variant:word.dialect});return;}
+    seen.add(key); // also catches duplicates within this same pasted batch
+    toAdd.push(word);
+  });
+
+  if(toAdd.length){
+    const sess=getSession();const sa=sess&&sess.active;
+    const tb=sa?(SESSION_QUEUE_FOR_BOX[sess.steps[sess.stepIdx]?.box||"l1"]||"l1q"):"l1";
+    const boxes=getBoxes();if(!boxes[tb])boxes[tb]=[];
+    toAdd.forEach(w=>{if(!boxes[tb].includes(w.id))boxes[tb].push(w.id);});
+    saveWords([...existingWords,...toAdd]);  // one write for the whole batch
+    saveBoxes(boxes);                        // one write for the whole batch
+    toast(`Imported ${toAdd.length} word${toAdd.length!==1?"s":""} to ${boxDef(tb).label} ✓`);
+  }
+  _importWordsState={..._importWordsState,error:null,result:{imported:toAdd.length,duplicates,invalid}};
+  renderImportWordsModal();
 }
 
 // ═══════════════════════════════════════════════════════════
