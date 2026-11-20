@@ -467,8 +467,12 @@ function closeModal(){document.getElementById("modal-root").innerHTML="";}
 function startSession(){
   const dow=_sessionModalCtx.dow;closeModal();
   const boxes=getBoxes();const order=["l5b","l4","l3","l2b","l1"];
-  const enabled=order.filter(b=>_sessionToggles[b]&&(boxes[b]||[]).length>0);
-  if(!enabled.length){toast("No words in selected boxes","var(--red)");return;}
+  // Keep every toggled level, even if empty, so its queue/feeder transitions
+  // (L3 Queue → L3, L2A → L2B, etc.) still run when the session passes through it.
+  const enabled=order.filter(b=>_sessionToggles[b]);
+  const feeders={l5b:["l5b","l5a"],l4:["l4","l4q"],l3:["l3","l3q"],l2b:["l2b","l2a"],l1:["l1","l1q"]};
+  const hasWork=enabled.some(b=>feeders[b].some(k=>(boxes[k]||[]).length>0));
+  if(!enabled.length||!hasWork){toast("No words in selected boxes","var(--red)");return;}
   const steps=enabled.map(b=>({box:b,done:false,correct:0,incorrect:0}));
   saveSession({active:true,dow,steps,stepIdx:0,queue:[...(boxes[steps[0].box]||[])],queueIdx:0,flipped:false,ratings:{},pendingPrompt:null,startedAt:Date.now(),moveLog:[],sessionCorrect:0,sessionTotal:0,byLevel:{},cardDirection:_sessionModalCtx.cardDirection||"es-en"});
   setView("review");
@@ -1534,4 +1538,3 @@ function bootApp(){
 </script>
 </body>
 </html>
- 
