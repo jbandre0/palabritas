@@ -54,6 +54,8 @@ nav{display:flex;align-items:center;justify-content:space-between;gap:10px;paddi
 .lbl{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px;}
 .field{margin-bottom:18px;}
 .btn1{background:linear-gradient(135deg,#E2543D,#FF8A78 55%,#F6A65F);color:#2A0F0A;border:none;border-radius:12px;padding:13px 26px;font-size:14px;cursor:pointer;font-weight:800;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 26px rgba(255,110,90,0.32),inset 0 1px 0 rgba(255,255,255,.3);transition:all .2s;}
+.btn1,.btn2{font-family:var(--serif);font-weight:400;letter-spacing:.06em;}
+.btn1{font-size:15px;}
 .btn1:hover{filter:brightness(1.07);transform:translateY(-1px);}
 .btn1:active{transform:translateY(0);}
 .btn1:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;filter:none;}
@@ -410,7 +412,7 @@ function renderHome(){
     const cnt=planned.reduce((s,b)=>s+(boxes[b]||[]).length,0);
     const doneToday=sessionDoneToday();
     ctaHtml=`<div class="card" style="margin-bottom:14px">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:2px">Today is <span style="color:var(--sand);font-weight:600">${DAY_NAMES[dow]}</span></div>
+      <div style="font-family:var(--serif);font-size:26px;line-height:1.15;color:var(--sand);margin-bottom:4px"><span style="color:var(--muted);font-size:17px">Today is</span> ${DAY_NAMES[dow]}</div>
       <div style="font-size:11px;color:var(--muted2);margin-bottom:16px">Planned: ${planned.map(b=>boxDef(b).label).join(" → ")}</div>
       ${doneToday
         ?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
@@ -421,8 +423,8 @@ function renderHome(){
         :cnt===0
           ?`<div style="font-size:12px;color:var(--muted);margin-bottom:16px">No words in today's boxes yet.</div>
             <button class="btn1" style="width:100%;justify-content:center;font-size:16px;padding:16px" onclick="openSessionModal()" disabled>▶ Start Session</button>`
-          :`<div style="margin-bottom:16px"><span style="font-size:32px;font-weight:700;color:var(--brandL)">${cnt}</span>
-              <span style="font-size:13px;color:var(--muted);margin-left:8px">word${cnt!==1?"s":""} to review</span></div>
+          :`<div style="margin-bottom:16px"><span style="font-family:var(--serif);font-size:48px;line-height:1;color:var(--brandL)">${cnt}</span>
+              <span style="font-family:var(--serif);font-size:18px;color:var(--muted);margin-left:10px">word${cnt!==1?"s":""} to review</span></div>
             <button class="btn1" style="width:100%;justify-content:center;font-size:16px;padding:16px" onclick="openSessionModal()">▶ Start Session</button>`
       }
     </div>`;
